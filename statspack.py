@@ -6,10 +6,7 @@ import numpy as np
 import logging
 import colorlog
 from datetime import datetime
-from scipy.stats import kde, scoreatpercentile
 import scipy.stats
-# from scipy.stats import gaussian_kde, scoreatpercentile
-from multiprocessing import Pool
 import matplotlib.pyplot as plt
 
 
@@ -36,7 +33,7 @@ def call_logger(name, level=logging.INFO):
     logger.addHandler(ch)
 
 
-def bining(x, y, z, nbins=10, xlim=(None, None), ylim=(None, None)):
+def bining(x, y, z, nbins=10, xlim=(None, None), ylim=(None, None), verbose=False):
     """Bining data for contour plots.
 
     Parameters
@@ -53,6 +50,8 @@ def bining(x, y, z, nbins=10, xlim=(None, None), ylim=(None, None)):
         x limits
     ylim : tuple
         y limits
+    verbose : bool
+        verbose
 
     Returns
     -------
@@ -64,8 +63,11 @@ def bining(x, y, z, nbins=10, xlim=(None, None), ylim=(None, None)):
         z data binned
     """
     # initialize the logger
+    __name__ = 'statspack.bining'
     call_logger(__name__, level=logging.INFO)
     logger = logging.getLogger(__name__)
+    logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "Initializing bining"]))
 
     # Check for valid xlim and ylim inputs
     if xlim[0] is None:
@@ -82,31 +84,47 @@ def bining(x, y, z, nbins=10, xlim=(None, None), ylim=(None, None)):
     y_bins = np.digitize(y, yv) - 1
 
     # Calculate the bin centers using the digitized indices
-    logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "Calculating bin centers"]))
+    if verbose:
+        logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Calculating bin centres"]))
     x_center = (xv[:-1] + xv[1:]) / 2
     y_center = (yv[:-1] + yv[1:]) / 2
 
     # Create a 2D array of bin indices for each data point
     bin_indices = x_bins * nbins + y_bins
 
+    # Check for invalid bin indices and discard them
+    valid_indices_mask = (bin_indices >= 0) & (bin_indices < nbins**2)
+    x_bins = x_bins[valid_indices_mask]
+    y_bins = y_bins[valid_indices_mask]
+    z = z[valid_indices_mask]
+    bin_indices = bin_indices[valid_indices_mask]
+
     # Initialize empty arrays for the binned data
-    X = np.full(nbins**2, np.nan)
-    Y = np.full(nbins**2, np.nan)
-    Z = np.full(nbins**2, np.nan)
-
-    # Calculate medians for each bin using bin_indices
-    logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "Calculating medians for the bins"]))
-    for i in range(nbins**2):
-        mask = (bin_indices == i)
-        bin_data = z[mask]
-        if len(bin_data) > 0:
-            Z[i] = np.median(bin_data)
-
-    # Unravel the 1D arrays to 2D arrays for X, Y, and Z
+    if verbose:
+        logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Initializing empty arrays for the binned data"]))
     X = x_center.repeat(nbins)
     Y = np.tile(y_center, nbins)
+    Z = np.full(nbins**2, np.nan)
+
+    # Calculate sums for each bin using np.add.at
+    if verbose:
+        logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Calculating sums for each bin using np.add.at"]))
+    np.add.at(Z, bin_indices, z)
+
+    # Calculate the count of data points in each bin
+    bin_counts = np.bincount(bin_indices, minlength=nbins**2)
+
+    # Replace NaN values in Z with 0 to avoid division by zero
+    Z[np.isnan(Z)] = 0
+
+    # Calculate the mean instead of median using np.divide
+    if verbose:
+        logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Calculating the mean instead of median using np.divide"]))
+    Z = np.divide(Z, bin_counts, out=np.zeros_like(Z), where=(bin_counts != 0))
 
     return X, Y, Z
 
@@ -204,7 +222,7 @@ def find_confidence_interval(hist_pdf, prc):
     return np.interp(prc, np.linspace(0, 1, len(sorted_pdf)), sorted_pdf)
 
 
-def density_contour(xdata, ydata, binsx, binsy, ax=None, range=None, fill=False, levels_prc=[.68, .95, .99], **contour_kwargs):
+def density_contour(xdata, ydata, binsx, binsy, ax=None, fill=False, levels_prc=[.68, .95, .99], **contour_kwargs):
     """ Create a density contour plot.
 
     Parameters
