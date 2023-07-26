@@ -3,11 +3,14 @@
 # herpich 2022-12-20 fabiorafaelh@gmail.com
 
 import numpy as np
-import matplotlib.pyplot as plt
 import logging
 import colorlog
 from datetime import datetime
-from scipy.stats import gaussian_kde, scoreatpercentile
+from scipy.stats import kde, scoreatpercentile
+import scipy.stats
+# from scipy.stats import gaussian_kde, scoreatpercentile
+from multiprocessing import Pool
+import matplotlib.pyplot as plt
 
 
 def call_logger(name, level=logging.INFO):
@@ -249,71 +252,53 @@ def density_contour(xdata, ydata, binsx, binsy, ax=None, range=None, fill=False,
     return out, levels
 
 
-# def contour_pdf(x_axis, y_axis, ax=None, nbins=10, percent: list = 10, colors='b'):
-#     '''
-#         contornos para percentis tirei deste site:
-#         http://stackoverflow.com/questions/12301071/multidimensional-confidence-intervals
-#     '''
-#     x1 = x_axis, y_axis
-#     xmin = min(x_axis)
-#     xmax = max(x_axis)
-#     ymin = min(y_axis)
-#     ymax = max(y_axis)
-#     xf = np.transpose(x1)
-#     print('calculating pdf...')
-#     pdf = scipy.stats.kde.gaussian_kde(xf.T)
-#     q, w = np.meshgrid(np.linspace(xmin, xmax, nbins),
-#                        np.linspace(ymin, ymax, nbins))
-#     r = pdf([q.flatten(), w.flatten()])
-#     if len(list(percent)) != len(list(colors)):
-#         print(
-#             'number of percentiles differs from number of colours. Setting colors to None')
-#         colors = [None] * len(list(percent))
-#     for perc, colour in zip(list(percent), list(colors)):
-#         print('calculating score for percentile', perc)
-#         s = scipy.stats.scoreatpercentile(pdf(pdf.resample(1000)), perc)
-#         r.shape = (nbins, nbins)
-#         print('creating contour for percentile', perc)
-#         if ax is None:
-#             contour = plt.contour(np.linspace(xmin, xmax, nbins),
-#                                   np.linspace(ymin, ymax, nbins),
-#                                   r, [s], linewidths=1.5, colors=colour)
-#         else:
-#             contour = ax.contour(np.linspace(xmin, xmax, nbins),
-#                                  np.linspace(ymin, ymax, nbins),
-#                                  r, [s], linewidths=1.5, colors=colour)
-#
-#     return contour
+def contour_pdf(x_axis, y_axis, ax=None, nbins=10, percent=[10],
+                colors=['b'], pdf_resample=100, verbose=False):
+    '''
+    contornos para percentis tirei deste site:
+    http://stackoverflow.com/questions/12301071/multidimensional-confidence-intervals
+    '''
+    __name__ = 'contour_pdf'
+    call_logger(__name__)
+    logger = logging.getLogger(__name__)
 
-def contour_pdf(x_axis, y_axis, ax=None, nbins=10, percent=np.array([10]), colors='b', verbose=False):
-    x1 = np.column_stack((x_axis, y_axis))
+    logger.info(
+        " - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Calculating PDF for %i bins and resolution of %i" % (nbins, pdf_resample)]))
     xmin, xmax = min(x_axis), max(x_axis)
     ymin, ymax = min(y_axis), max(y_axis)
-    xf = np.transpose(x1)
-
-    if verbose:
-        print('Calculating PDF...')
-    pdf = gaussian_kde(xf.T)
-    q, w = np.meshgrid(np.linspace(xmin, xmax, nbins),
-                       np.linspace(ymin, ymax, nbins))
-    r = pdf([q.flatten(), w.flatten()])
+    xf = np.transpose((x_axis, y_axis))
+    pdf = scipy.stats.kde.gaussian_kde(xf.T)
 
     percentiles = np.array(percent)
     if len(percentiles) != len(colors):
-        if verbose:
-            print(
-                'Number of percentiles differs from the number of colors. Setting colors to None.')
+        logger.warning(
+            " - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Number of percentiles differs from the number of colors. Setting colors to None."]))
         colors = [None] * len(percentiles)
 
-    if ax is not None:
-        contour = ax.contourf(np.linspace(xmin, xmax, nbins),
-                              np.linspace(ymin, ymax, nbins),
-                              r.reshape(nbins, nbins), percentiles / 100,
-                              colors=colors, alpha=0.5)
-    else:
-        contour = plt.contourf(np.linspace(xmin, xmax, nbins),
-                               np.linspace(ymin, ymax, nbins),
-                               r.reshape(nbins, nbins), percentiles / 100,
-                               colors=colors, alpha=0.5)
+    if verbose:
+        logger.info(
+            " - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Calculating scores for percentiles %s" % repr(percentiles)]))
+    scores = scoreatpercentile(pdf(pdf.resample(pdf_resample)), percentiles)
 
-    return contour
+    if verbose:
+        logger.info(
+            " - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Calculating grid values for %i bins" % nbins]))
+    q, w = np.meshgrid(np.linspace(xmin, xmax, nbins),
+                       np.linspace(ymin, ymax, nbins))
+    r = pdf([q.flatten(), w.flatten()])
+    r.shape = q.shape
+
+    if verbose:
+        logger.info(
+            " - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Creating contour plots..."]))
+    if ax is None:
+        ax = plt.gca()
+
+    return ax.contour(np.linspace(xmin, xmax, nbins),
+                      np.linspace(ymin, ymax, nbins),
+                      r, scores, linewidths=1.5, colors=colors)
