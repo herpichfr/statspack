@@ -1,12 +1,13 @@
 #!/bin/env python3
 # package with modules for statistic visualization
-# herpich 2022-12-20 fabiorafaelh@gmail.com
+# Fabio R. Herpich 2023-07-26 CASU/IoA Cambridge
+# All rights reserved (see LICENSE file)
 
 import numpy as np
+import scipy.stats
+from datetime import datetime
 import logging
 import colorlog
-from datetime import datetime
-import scipy.stats
 import matplotlib.pyplot as plt
 
 
@@ -169,12 +170,18 @@ def density_contour(xdata, ydata, binsx, binsy, ax=None, fill=False, levels_prc=
         Number of bins along y dimension
     ax : matplotlib.Axes (optional)
         If supplied, plot the contour to this axis. Otherwise, open a new figure
+    fill : bool
+        If True, fill the contours
+    levels_prc : list
+        List of confidence levels to plot. Default is [.68, .95, .99]
+    verbose : bool
+        verbose
     contour_kwargs : dict
         kwargs to be passed to pyplot.contour()
 
     Returns
     -------
-    out : tuple
+    contours, levels : tuple
         A tuple containing the contour plot(s) and the calculated contour levels.
     """
     __name__ = 'statspack.density_contour'
@@ -223,8 +230,31 @@ def density_contour(xdata, ydata, binsx, binsy, ax=None, fill=False, levels_prc=
 def contour_pdf(x_axis, y_axis, ax=None, nbins=10, percent=[10],
                 colors=['b'], pdf_resample=100, verbose=False):
     '''
-    contornos para percentis tirei deste site:
-    http://stackoverflow.com/questions/12301071/multidimensional-confidence-intervals
+    Create contours for a given set of percentiles over a 2D representation of the data.
+
+    Parameters
+    ----------
+    x_axis : numpy.ndarray
+        x-axis data
+    y_axis : numpy.ndarray
+        y-axis data
+    ax : matplotlib.Axes (optional)
+        If supplied, plot the contour to this axis. Otherwise, open a new figure
+    nbins : int
+        Number of bins along each axis
+    percent : list
+        List of percentiles to plot. Default is [10]
+    colors : list
+        List of colors to use for each percentile. Default is ['b']
+    pdf_resample : int
+        Number of points to use when calculating the PDF. Default is 100
+    verbose : bool
+        verbose
+
+    Returns
+    -------
+    contours: matplotlib.contour.QuadContourSet
+        A QuadContourSet of the contours
     '''
     __name__ = 'statspack.contour_pdf'
     call_logger(__name__)
