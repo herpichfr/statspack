@@ -129,81 +129,7 @@ def bining(x, y, z, nbins=10, xlim=(None, None), ylim=(None, None), verbose=Fals
     return X, Y, Z
 
 
-# def find_confidence_interval(x, pdf, confidence_level):
-#     """Find confidence interval from PDF.
-#
-#     Parameters
-#     ----------
-#     x : numpy.ndarray
-#         x data
-#     pdf : numpy.ndarray
-#         pdf data
-#     confidence_level : float
-#         confidence level
-#
-#     Returns
-#     -------
-#     out : float
-#         confidence interval
-#     """
-#     return pdf[pdf > x].sum() - confidence_level
-#
-#
-# def density_contour(xdata, ydata, binsx, binsy, ax=None, range=None, fill=False, levels_prc=[.68, .95, .99], **contour_kwargs):
-#     """ Create a density contour plot.
-#
-#    Parameters
-#    ----------
-#    xdata : numpy.ndarray
-#    ydata : numpy.ndarray
-#    binsx : int
-#        Number of bins along x dimension
-#    binsy : int
-#        Number of bins along y dimension
-#    ax : matplotlib.Axes (optional)
-#        If supplied, plot the contour to this axis. Otherwise, open a new figure
-#    contour_kwargs : dict
-#        kwargs to be passed to pyplot.contour()
-#    """
-#     # nbins_x = len(binsx) - 1
-#     # nbins_y = len(binsy) - 1
-#     import scipy.optimize as so
-#
-#     H, xedges, yedges = np.histogram2d(
-#         xdata, ydata, bins=[binsx, binsy], normed=True)
-#     x_bin_sizes = (xedges[1:] - xedges[:-1])
-#     y_bin_sizes = (yedges[1:] - yedges[:-1])
-#
-#     pdf = (H * (x_bin_sizes * y_bin_sizes))
-#
-#     levels = [so.brentq(find_confidence_interval, 0., 1.,
-#                         args=(pdf, prc)) for prc in levels_prc]
-#
-#     X, Y = 0.5 * (xedges[1:] + xedges[:-1]), 0.5 * (yedges[1:] + yedges[:-1])
-#     Z = pdf.T
-#
-#     if ax == None:
-#         contour = plt.contour(X, Y, Z, levels=levels, origin="lower",
-#                               **contour_kwargs)
-#         out = contour
-#         if fill == True:
-#             contourf = plt.contourf(X, Y, Z, levels=levels, origin="lower",
-#                                     **contour_kwargs)
-#             out = contour, contourf
-#     else:
-#         contour = ax.contour(X, Y, Z, levels=levels, origin="lower",
-#                              **contour_kwargs)
-#         out = contour
-#         if fill == True:
-#             contourf = ax.contourf(X, Y, Z, levels=levels, origin="lower",
-#                                    **contour_kwargs)
-#             out = contour, contourf
-#
-#     return out
-#
-
-
-def find_confidence_interval(hist_pdf, prc):
+def find_confidence_interval(hist_pdf, prc, verbose=False):
     """Find confidence interval from PDF.
 
     Parameters
@@ -212,17 +138,25 @@ def find_confidence_interval(hist_pdf, prc):
         PDF data
     prc : float
         confidence level
+    verbose : bool
+        verbose
 
     Returns
     -------
     out : float
         confidence interval
     """
+    if verbose:
+        __name__ = 'statspack.find_confidence_interval'
+        call_logger(__name__, level=logging.INFO)
+        logger = logging.getLogger(__name__)
+        logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Initializing find_confidence_interval"]))
     sorted_pdf = np.sort(hist_pdf.ravel())
     return np.interp(prc, np.linspace(0, 1, len(sorted_pdf)), sorted_pdf)
 
 
-def density_contour(xdata, ydata, binsx, binsy, ax=None, fill=False, levels_prc=[.68, .95, .99], **contour_kwargs):
+def density_contour(xdata, ydata, binsx, binsy, ax=None, fill=False, levels_prc=[.68, .95, .99], verbose=False, **contour_kwargs):
     """ Create a density contour plot.
 
     Parameters
@@ -243,18 +177,34 @@ def density_contour(xdata, ydata, binsx, binsy, ax=None, fill=False, levels_prc=
     out : tuple
         A tuple containing the contour plot(s) and the calculated contour levels.
     """
+    __name__ = 'statspack.density_contour'
+    call_logger(__name__, level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "Initializing density_contour"]))
+
     H, xedges, yedges = np.histogram2d(
         xdata, ydata, bins=[binsx, binsy], density=True)
     x_bin_sizes = (xedges[1:] - xedges[:-1])
     y_bin_sizes = (yedges[1:] - yedges[:-1])
 
+    if verbose:
+        logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Calculating contour levels"]))
     pdf = (H * (x_bin_sizes * y_bin_sizes))
 
-    levels = [find_confidence_interval(pdf, prc) for prc in levels_prc]
+    if verbose:
+        logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Calculating confidence intervals"]))
+    levels = [find_confidence_interval(
+        pdf, prc, verbose=verbose) for prc in levels_prc]
 
     X, Y = 0.5 * (xedges[1:] + xedges[:-1]), 0.5 * (yedges[1:] + yedges[:-1])
     Z = pdf.T
 
+    if verbose:
+        logger.info(" - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Creating contours"]))
     if ax is None:
         ax = plt.gca()
 
@@ -276,7 +226,7 @@ def contour_pdf(x_axis, y_axis, ax=None, nbins=10, percent=[10],
     contornos para percentis tirei deste site:
     http://stackoverflow.com/questions/12301071/multidimensional-confidence-intervals
     '''
-    __name__ = 'contour_pdf'
+    __name__ = 'statspack.contour_pdf'
     call_logger(__name__)
     logger = logging.getLogger(__name__)
 
@@ -299,7 +249,8 @@ def contour_pdf(x_axis, y_axis, ax=None, nbins=10, percent=[10],
         logger.info(
             " - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         "Calculating scores for percentiles %s" % repr(percentiles)]))
-    scores = scoreatpercentile(pdf(pdf.resample(pdf_resample)), percentiles)
+    scores = scipy.stats.scoreatpercentile(
+        pdf(pdf.resample(pdf_resample)), percentiles)
 
     if verbose:
         logger.info(
