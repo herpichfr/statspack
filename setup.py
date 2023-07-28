@@ -1,10 +1,9 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='statspack',
     version='0.1.2',
     packages=['statspack'],
-    # package_dir={'': 'bin'},
     install_requires=[
         'numpy',
         'scipy',
