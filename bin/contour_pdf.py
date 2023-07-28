@@ -1,4 +1,4 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 # package with modules for statistic visualization
 # Fabio R. Herpich 2023-07-26 CASU/IoA Cambridge
 # All rights reserved (see LICENSE file)

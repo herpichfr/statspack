@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # statspack/__init__.py
 
 # Import sub-modules or functions
