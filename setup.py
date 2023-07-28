@@ -1,15 +1,17 @@
 from setuptools import setup, find_packages
-from setuptools_scm import get_version
 
 setup(
     name='statspack',
-    version=get_version(),
-    packages=find_packages(),
+    version='0.1.2',
+    packages=['statspack'],
+    # package_dir={'': 'bin'},
     install_requires=[
         'numpy',
         'scipy',
         'matplotlib',
         'colorlog',
+        'setuptools',
+        'wheel',
     ],
     author='Fabio R Herpich',
     author_email='fabio.herpich@ast.cam.ac.uk',
@@ -22,7 +24,6 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
