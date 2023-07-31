@@ -6,7 +6,7 @@ requires = [
 
 [tool.poetry]
 name = "statspack"
-version = "0.1.2"
+version = "0.1.3"
 description = "A statistical visualization package optimized to work with percentiles and histograms."
 authors = ["Fabio R. Herpich <fabio.herpich@ast.cam.ac.uk>"]
 license = "GPL-3.0-only"

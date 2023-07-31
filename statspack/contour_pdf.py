@@ -103,8 +103,10 @@ def contour_pdf(x_axis, y_axis, ax=None, nbins=10, percent=[10],
             " - ".join([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         "Creating contour plots..."]))
     if ax is None:
-        ax = plt.gca()
-
-    return ax.contour(np.linspace(xmin, xmax, nbins),
-                      np.linspace(ymin, ymax, nbins),
-                      r, scores, linewidths=1.5, colors=colors)
+        return plt.contour(np.linspace(xmin, xmax, nbins),
+                           np.linspace(ymin, ymax, nbins),
+                           r, scores, linewidths=1.5, colors=colors)
+    else:
+        return ax.contour(np.linspace(xmin, xmax, nbins),
+                          np.linspace(ymin, ymax, nbins),
+                          r, scores, linewidths=1.5, colors=colors)
